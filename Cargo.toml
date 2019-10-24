@@ -1,0 +1,9 @@
+[package]
+name = "rust-sdl2-audio-callback-modify"
+version = "0.1.0"
+authors = ["Jakub Stasiak <jakub@stasiak.at>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
