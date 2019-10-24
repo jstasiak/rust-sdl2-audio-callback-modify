@@ -1,8 +1,11 @@
-use sdl2::audio::{AudioCallback, AudioSpecDesired};
+use sdl2::audio::{AudioCVT, AudioCallback, AudioSpecDesired, AudioSpecWAV};
 use std::thread;
 use std::time::Duration;
 
-struct SimpleCallback;
+struct SimpleCallback {
+    buffer: Vec<u8>,
+    position: usize,
+}
 
 impl AudioCallback for SimpleCallback {
     type Channel = i16;
@@ -10,7 +13,16 @@ impl AudioCallback for SimpleCallback {
     // This function is called whenever the audio subsystem wants more data to play
     fn callback(&mut self, out: &mut [i16]) {
         for value in out.iter_mut() {
-            *value = 0;
+            *value = if self.position < self.buffer.len() {
+                let sample = i16::from_le_bytes([
+                    self.buffer[self.position],
+                    self.buffer[self.position + 1],
+                ]);
+                self.position += 2;
+                sample
+            } else {
+                0
+            }
         }
     }
 }
@@ -28,7 +40,24 @@ fn main() {
     };
 
     let audio_device = audio_subsystem
-        .open_playback(None, &desired_audio_spec, |_spec| SimpleCallback {})
+        .open_playback(None, &desired_audio_spec, |spec| {
+            let wav = AudioSpecWAV::load_wav("beep.wav").unwrap();
+            let converter = AudioCVT::new(
+                wav.format,
+                wav.channels,
+                wav.freq,
+                spec.format,
+                spec.channels,
+                spec.freq,
+            )
+            .unwrap();
+            let data = converter.convert(wav.buffer().to_vec());
+
+            SimpleCallback {
+                buffer: data,
+                position: 0,
+            }
+        })
         .unwrap();
 
     // This starts the playback.
