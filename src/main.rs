@@ -39,7 +39,7 @@ fn main() {
         samples: None,
     };
 
-    let audio_device = audio_subsystem
+    let mut audio_device = audio_subsystem
         .open_playback(None, &desired_audio_spec, |spec| {
             let wav = AudioSpecWAV::load_wav("beep.wav").unwrap();
             let converter = AudioCVT::new(
@@ -63,5 +63,14 @@ fn main() {
     // This starts the playback.
     audio_device.resume();
 
+    thread::sleep(Duration::from_millis(1_000));
+    {
+        // The AudioDeviceLockGuard returned by the lock() method gives us safe and exclusive
+        // access to the callback structure. This allows us to modify the position or the buffer.
+        let mut lock = audio_device.lock();
+        // lock dereferences to SimpleCallback so we can access SimpleCallback's attributes
+        // directly
+        lock.position = 0;
+    }
     thread::sleep(Duration::from_millis(1_000));
 }
